@@ -16,7 +16,7 @@ Optional:
 
 WORD_SIZE - the size of a single word, in bytes, default 2
 
-CHUNK_SIZE - how many words are read at once, to prevent loading entire large files in memort, default = 4096
+CHUNK_SIZE - how many words are read at once, to prevent loading  large files in memory, default = 4096
 
 OUT - filename of the compressed file, by default its input_filename.compressed
 
