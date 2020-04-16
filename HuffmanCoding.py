@@ -82,7 +82,7 @@ class HuffmanCoding:
 
                 m = len(compressed_chunk_str) % 32
 
-                last_chunk_remainder = compressed_chunk_str[-m:]
+                last_chunk_remainder = '' if m == 0 else compressed_chunk_str[-m:]
                 compressed_chunk_str = compressed_chunk_str[:-m]
 
                 for i in range(len(compressed_chunk_str)//32):
@@ -183,8 +183,8 @@ class HuffmanCoding:
         return {x[0]: x[1] for x in heappop(heap)[1:]}
 
 if __name__ == '__main__':
-    hc = HuffmanCoding(4, verbose=True)
-    wms, fs = hc.compress('test.gcode', 'test.gcode.compressed')
+    hc = HuffmanCoding(2, verbose=True)
+    wms, fs = hc.compress('10.exe', '10.exe.compressed')
 
     #print(f'Word Mapping Size: {wms} bytes Compressed File Size {fs} bytes')
 
