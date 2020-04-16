@@ -2,6 +2,8 @@ from functools import partial
 from heapq import heappush, heappop, heapify
 from collections import defaultdict
 import pickle
+import sys
+import os
 
 class HuffmanCoding:
     '''
@@ -16,11 +18,13 @@ class HuffmanCoding:
         Rest - Huffman Compressed file
     '''
 
-    def __init__(self, word_size, words_per_chunk = 4096):
+    def __init__(self, word_size, words_per_chunk = 4096, verbose = False):
         self.word_size = word_size
         self.word_per_chunk = words_per_chunk
+        self.verbose = verbose
 
     def compress(self, in_filename: str, out_filename: str):
+
         frequency_count, uncompressed_padding_length = self.get_frequency_count(in_filename)
         word_mapping = self.build_word_mapping(frequency_count)
 
@@ -46,7 +50,23 @@ class HuffmanCoding:
             #remainder from the last chunk that didn't fit into a byte
             last_chunk_remainder = ''
 
+            if self.verbose:
+                print('Performing compression')
+            
+            bytes_processed = 0
+            og_size = os.path.getsize(in_filename)
+            last_percentage = 0
+
             for chunk in iter(partial(in_f.read, chunk_size), b''):
+
+                if self.verbose:
+                    bytes_processed += len(chunk)
+                    percentage = int(bytes_processed/og_size * 100)
+
+                    if percentage > last_percentage:
+                        print(f'\r{percentage}% completed', end = '')
+                        sys.stdout.flush()
+                        last_percentage = percentage
                 
                 #if the last word in the chunk is incomplete, pad it with 0s (this could happen only when end of file is reached)
                 if len(chunk) % self.word_size != 0:
@@ -83,6 +103,9 @@ class HuffmanCoding:
                 out_f.seek(8)
                 out_f.write(padding_length.to_bytes(4, 'big'))
 
+        if(self.verbose):
+            print('')
+
         return word_mapping_size, compressed_file_size
 
     def decompress(self, in_filename: str, out_filename: str):
@@ -97,11 +120,17 @@ class HuffmanCoding:
             word_mapping_length = int.from_bytes(in_f.read(8), 'big')
             word_mapping = pickle.loads(in_f.read(word_mapping_length))
 
-            print('here')
-
     def get_frequency_count(self, filename: str):
 
+        og_size = os.path.getsize(filename)
+
+        if self.verbose:
+            print('Generating frequency count')
+
         frequency_count = defaultdict(int)
+
+        bytes_processed = 0
+        last_percentage = 0
 
         #read data in chunks of words_size * words_per_chunk
         chunk_size = self.word_size * self.word_per_chunk
@@ -110,17 +139,27 @@ class HuffmanCoding:
             
             for chunk in iter(partial(f.read, chunk_size), b''):
                 
+                if self.verbose:
+                    bytes_processed += len(chunk)
+                    percentage = int(bytes_processed/og_size * 100)
+
+                    if percentage > last_percentage:
+                        print(f'\r{percentage}% completed', end = '')
+                        sys.stdout.flush()
+                        last_percentage = percentage
+                
                 #if the last word in the chunk is incomplete, pad it with 0s (this could happen only when end of file is reached)
                 if len(chunk) % self.word_size != 0:
                     padded_length = ((len(chunk) // self.word_size) + 1) * self.word_size
-                    padding_length = padded_length = len(chunk)
+                    padding_length = padded_length - len(chunk)
                     chunk = chunk.ljust(padded_length, b'\0')
 
                 for i in range(len(chunk)//self.word_size):
                     word = chunk[i * self.word_size : i * self.word_size + self.word_size]
-
                     frequency_count[word] += 1
 
+        if(self.verbose):
+            print('')
         return frequency_count, padding_length
 
     #https://paddy3118.blogspot.com/2009/03/huffman-encoding-in-python.html
@@ -144,7 +183,7 @@ class HuffmanCoding:
         return {x[0]: x[1] for x in heappop(heap)[1:]}
 
 if __name__ == '__main__':
-    hc = HuffmanCoding(4)
+    hc = HuffmanCoding(4, verbose=True)
     wms, fs = hc.compress('test.gcode', 'test.gcode.compressed')
 
     #print(f'Word Mapping Size: {wms} bytes Compressed File Size {fs} bytes')

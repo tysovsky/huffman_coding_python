@@ -24,7 +24,7 @@ if args.out == None:
 
 start = time.time()
 
-hc = HuffmanCoding(args.word_size, args.chunk_size)
+hc = HuffmanCoding(args.word_size, args.chunk_size, verbose = True)
 wms, fs = hc.compress(args.input, args.out)
 
 end = time.time()
