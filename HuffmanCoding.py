@@ -34,7 +34,7 @@ class HuffmanCoding:
         #read data in chunks of words_size * words_per_chunk
         chunk_size = self.word_size * self.word_per_chunk
         
-        with open(in_filename, 'rb') as in_f, open(out_filename, 'wb') as out_f:
+        with open(in_filename, 'rb') as in_f, open(out_filename, 'wb') as out_f, open('test.txt.debug', 'wb') as debug_f:
 
             out_f.write(bytes.fromhex("00ffff00" )) #magic number
             out_f.write(self.word_size.to_bytes(4, 'big')) #word size
@@ -83,10 +83,11 @@ class HuffmanCoding:
                 m = len(compressed_chunk_str) % 32
 
                 last_chunk_remainder = '' if m == 0 else compressed_chunk_str[-m:]
-                compressed_chunk_str = compressed_chunk_str[:-m]
+                compressed_chunk_str = compressed_chunk_str if m == 0 else compressed_chunk_str[:-m]
 
                 for i in range(len(compressed_chunk_str)//32):
                     compressed_byte_array = int(compressed_chunk_str[i * 32 : i * 32 + 32], 2).to_bytes(4, 'big')
+                    debug_f.write(compressed_byte_array)
                     out_f.write(compressed_byte_array)
                     compressed_file_size += 4
             
@@ -98,6 +99,7 @@ class HuffmanCoding:
                 for i in range(len(last_chunk_remainder)//32):
                     compressed_byte_array = int(last_chunk_remainder[i * 32 : i * 32 + 32], 2).to_bytes(4, 'big')
                     out_f.write(compressed_byte_array)
+                    debug_f.write(compressed_byte_array)
                     compressed_file_size += 4
 
                 out_f.seek(8)
@@ -119,6 +121,65 @@ class HuffmanCoding:
             original_padding = int.from_bytes(in_f.read(4), 'big')
             word_mapping_length = int.from_bytes(in_f.read(8), 'big')
             word_mapping = pickle.loads(in_f.read(word_mapping_length))
+
+            reverse_word_mapping = {key: item for item, key in word_mapping.items()}
+
+            bytes_processed = 0
+            last_percentage = 0
+            og_size = os.path.getsize(in_filename)
+
+            if self.verbose:
+                print('Performing decompression')
+
+            remaining_binary_str = ''
+
+            #read data in chunks of words_size * words_per_chunk
+            chunk_size = self.word_size * self.word_per_chunk
+            
+
+            for chunk in iter(partial(in_f.read, chunk_size), b''):
+
+                if self.verbose:
+                    bytes_processed += len(chunk)
+                    percentage = int(bytes_processed/og_size * 100)
+
+                    if percentage > last_percentage:
+                        print(f'\r{percentage}% completed', end = '')
+                        sys.stdout.flush()
+                        last_percentage = percentage
+
+                binary_str = remaining_binary_str
+
+                for byte in chunk:
+                    s = bin(byte)[2:].rjust(8, '0')
+                    binary_str += s
+                
+
+                end_of_last_word = 0
+                for i in range(1, len(binary_str)+1):
+                    sequence = binary_str[end_of_last_word:i]
+                    if sequence in reverse_word_mapping:
+                        out_f.write(reverse_word_mapping[binary_str[end_of_last_word:i]])
+                        end_of_last_word = i
+
+                remaining_binary_str = binary_str[end_of_last_word:]
+
+                
+            #remove end of file padding
+            padding = compressed_padding - len(remaining_binary_str)
+            padding_chars = b''
+            c = ''
+
+            for i in range(padding):
+                c += '0'
+                if c in reverse_word_mapping:
+                    padding_chars += reverse_word_mapping[c]
+                    c = ''
+            out_f.seek(-(len(padding_chars)), os.SEEK_END)
+            out_f.truncate()
+
+            if self.verbose:
+                print('')
 
     def get_frequency_count(self, filename: str):
 
@@ -150,6 +211,7 @@ class HuffmanCoding:
                 
                 #if the last word in the chunk is incomplete, pad it with 0s (this could happen only when end of file is reached)
                 if len(chunk) % self.word_size != 0:
+                    l = len(chunk)
                     padded_length = ((len(chunk) // self.word_size) + 1) * self.word_size
                     padding_length = padded_length - len(chunk)
                     chunk = chunk.ljust(padded_length, b'\0')
@@ -183,9 +245,29 @@ class HuffmanCoding:
         return {x[0]: x[1] for x in heappop(heap)[1:]}
 
 if __name__ == '__main__':
-    hc = HuffmanCoding(2, verbose=True)
-    wms, fs = hc.compress('10.exe', '10.exe.compressed')
+    hc = HuffmanCoding(1, verbose=True)
 
-    #print(f'Word Mapping Size: {wms} bytes Compressed File Size {fs} bytes')
+    name = 'test.gcode'
 
-    #hc.decompress('test.txt.compressed', 'test.txt.original')
+    wms, fs = hc.compress(name, f'{name}.compressed')
+    hc.decompress(f'{name}.compressed', f'{name}.original')
+
+    import hashlib
+    
+    hasher1 = hashlib.md5()
+    afile1 = open(name, 'rb')
+    buf1 = afile1.read()
+    a = hasher1.update(buf1)
+    md5_a=(str(hasher1.hexdigest()))
+    
+    hasher2 = hashlib.md5()
+    afile2 = open(f'{name}.original', 'rb')
+    buf2 = afile2.read()
+    b = hasher2.update(buf2)
+    md5_b=(str(hasher2.hexdigest()))
+    
+    #Compare md5
+    if(md5_a==md5_b):
+        print("Hashes match")
+    else:
+        print("Hashes do not match")

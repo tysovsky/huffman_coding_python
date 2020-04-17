@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description="Compress input file using Huffman 
 
 parser.add_argument('input', type=str, help="file to compress")
 
-parser.add_argument('-w', '--word-size', dest='word_size', type=int, default=2,
+parser.add_argument('-w', '--word-size', dest='word_size', type=int, default=1,
 					help="word size in bytes (default: %(default)s)")
 
 parser.add_argument('-c', '--chunk-size', dest='chunk_size', type=int, default=4096, 
