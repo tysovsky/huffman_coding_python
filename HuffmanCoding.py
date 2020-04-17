@@ -173,11 +173,11 @@ class HuffmanCoding:
                 if c in reverse_word_mapping:
                     padding_chars += reverse_word_mapping[c]
                     c = ''
-            out_f.seek(-(len(padding_chars)), os.SEEK_END)
+            out_f.seek(-(len(padding_chars) + original_padding), os.SEEK_END)
             out_f.truncate()
 
             if self.verbose:
-                print('')
+                print('\r100% completed')
 
     def get_frequency_count(self, filename: str):
 
@@ -245,7 +245,7 @@ class HuffmanCoding:
 if __name__ == '__main__':
     hc = HuffmanCoding(1, verbose=True)
 
-    name = 'test.gcode'
+    name = 'test.txt'
 
     wms, fs = hc.compress(name, f'{name}.compressed')
     hc.decompress(f'{name}.compressed', f'{name}.original')

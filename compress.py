@@ -32,6 +32,7 @@ end = time.time()
 og_size = os.path.getsize(args.input)
 compressed_size = wms+fs+4+4+4+8 # word_mapping + compressed_file + magic_number + compressed_padding + original_padding + word_mapping_length
 
+print(f'Compressed as {args.out}')
 print(f'Time elapsed: {end-start:.3f} seconds')
 print(f'Word Mapping Size: {wms+4+4+4+8} bytes, Compressed File Size: {fs} bytes')
 print(f'Original file size: {og_size} bytes, Total Compressed file size: {compressed_size} bytes')
