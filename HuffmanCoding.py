@@ -34,7 +34,7 @@ class HuffmanCoding:
         #read data in chunks of words_size * words_per_chunk
         chunk_size = self.word_size * self.word_per_chunk
         
-        with open(in_filename, 'rb') as in_f, open(out_filename, 'wb') as out_f, open('test.txt.debug', 'wb') as debug_f:
+        with open(in_filename, 'rb') as in_f, open(out_filename, 'wb') as out_f:
 
             out_f.write(bytes.fromhex("00ffff00" )) #magic number
             out_f.write(self.word_size.to_bytes(4, 'big')) #word size
@@ -87,7 +87,6 @@ class HuffmanCoding:
 
                 for i in range(len(compressed_chunk_str)//32):
                     compressed_byte_array = int(compressed_chunk_str[i * 32 : i * 32 + 32], 2).to_bytes(4, 'big')
-                    debug_f.write(compressed_byte_array)
                     out_f.write(compressed_byte_array)
                     compressed_file_size += 4
             
@@ -99,7 +98,6 @@ class HuffmanCoding:
                 for i in range(len(last_chunk_remainder)//32):
                     compressed_byte_array = int(last_chunk_remainder[i * 32 : i * 32 + 32], 2).to_bytes(4, 'big')
                     out_f.write(compressed_byte_array)
-                    debug_f.write(compressed_byte_array)
                     compressed_file_size += 4
 
                 out_f.seek(8)
